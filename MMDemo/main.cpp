@@ -2,6 +2,8 @@
  * Sound stimuli WAV files recorded from http://www.oddcast.com/home/demos/tts/tts_example.php?sitepal
  * Each set consists of 6 different words with same language
  * PNG files were drawn by own.
+ *
+ * To run exe file, need 'freeglut.dll', 'glew32.dll', 'glfw3.dll' and vc redist package
  */
 
 #include <gl/freeglut.h>
@@ -30,8 +32,8 @@ int atStart = -1; // flag to show splash screen
 clock_t begin, end;
 
 
-int ansarr[2][9] = { {1,0,1,1,0,0,1,0,1}, {1,0,0,1,0,1,1,0,0} }; // array for real answer
-int retarr[2][9] = { {1,0,1,1,1,1,1,1,1}, {1,1,1,1,1,1,0,1,1} }; // array for fake return
+int ansarr[3][6] = { {1,0,1,1,0,0},{1,0,1,1,0,0 },{1,0,1,1,0,0 }}; // array for real answer
+int retarr[3][6] = { {1,0,1,1,1,1}, {1,1,1,1,1,1}, {1,1,1,0,1,1 } }; // array for fake return
 
 void Init()
 {
@@ -39,6 +41,8 @@ void Init()
 	glutInitWindowPosition(300, 100);
 	glutInitWindowSize(width, height);
 	glutCreateWindow("MalMaum Demo");
+	
+	glutFullScreen(); // for real exp fullscreen is better
 
 	glEnable(GL_DEPTH_TEST);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -63,7 +67,6 @@ void prepPic(int _time)
 	// Sleep(_time);
 }
 
-
 // result scene for real exp
 void waitPicq(int ans) // ans 1 z, ans 0 / 
 {
@@ -79,7 +82,6 @@ void waitPicq(int ans) // ans 1 z, ans 0 /
 	}
 		
 }
-
 
 // result scene for fake exp
 void waitPic()
@@ -101,8 +103,11 @@ void nextPic()
 	int width, height;
 	char fname[MAX_BUF_SIZE];
 
-	if ((++checkcnt) > 8) { // end of stimulus
-		sprintf_s(fname, "png\\gg.png", checkcnt);
+	if ((++checkcnt) > 5) { // end of stimulus
+		if(setcnt != 2)
+			sprintf_s(fname, "png\\prep.png", checkcnt);
+		else
+			sprintf_s(fname, "png\\gg.png", checkcnt);
 	}
 	else {
 		sprintf_s(fname, "png\\%d.png", checkcnt);
@@ -144,7 +149,7 @@ void displayCallback()
 	char fname[MAX_BUF_SIZE];
 	sprintf_s(fname, "wav\\%d_%d.wav", setcnt, checkcnt);
 
-	if (checkcnt > 8) {
+	if (checkcnt > 5) {
 		// TO-DO to deal with more than 3 sets, change below if condition
 		// but may need nothing to do for prepare at DisplayCallback...
 		if (setcnt == 0)
@@ -186,10 +191,10 @@ void keyboardCallback(unsigned char key, int x, int y)
 {
 	char buf[MAX_BUF_SIZE];
 
-	if (checkcnt > 8 && key != 27) {
+	if (checkcnt > 5 && key != 27) {
 		// TO-DO to deal with more than 3 sets, change below if condition
-		if (setcnt == 0) { // move to next stimulus
-			setcnt = 1;
+		if (setcnt < 3) { // move to next stimulus
+			setcnt++;
 			checkcnt = -1;
 			prepPic(10*SLEEP_TIME);
 			DrawTex();
@@ -197,7 +202,7 @@ void keyboardCallback(unsigned char key, int x, int y)
 			return;
 		}
 		else
-			return; // do nothing if 2nd set
+			return; // do nothing if exp end
 	}
 
 	// setcnt/qflag initialize
@@ -221,8 +226,8 @@ void keyboardCallback(unsigned char key, int x, int y)
 			std::cout << "[YES] [" << checkcnt << "] " << (end - begin) << std::endl;
 			std::cout << "Real answer is " << ansarr[setcnt][checkcnt] << std::endl;
 #endif /* DEBUG */
-			sprintf_s(buf, "[%d] _ YES _ %d milisec\n", checkcnt, (end - begin));
-			fwrite(buf, sizeof(char), 26, fd);
+			sprintf_s(buf, "[%d-%d] _ YES _ %5d milisec\n", setcnt, checkcnt, (end - begin));
+			fwrite(buf, sizeof(char), 28, fd);
 		}	
 		cflag = 1;
 		(qflag==1 ? waitPicq(1) : waitPic());
@@ -242,8 +247,8 @@ void keyboardCallback(unsigned char key, int x, int y)
 #ifdef DEBUG
 			std::cout << "[NO] [" << checkcnt << "] " << (end - begin) << std::endl;
 #endif /* DEBUG */
-			sprintf_s(buf, "[%d] _ NO _ %d milisec\n", checkcnt, (end - begin));
-			fwrite(buf, sizeof(char), 26, fd);
+			sprintf_s(buf, "[%d-%d] _ N O _ %5d milisec\n", setcnt, checkcnt, (end - begin));
+			fwrite(buf, sizeof(char), 28, fd);
 		}
 		cflag = 1; 
 		(qflag==1 ? waitPicq(0) : waitPic());
@@ -260,7 +265,6 @@ void keyboardCallback(unsigned char key, int x, int y)
 	
 	glutPostRedisplay();
 }
-
 
 void mouseCallback(int button, int action, int x, int y)
 {
