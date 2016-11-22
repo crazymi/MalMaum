@@ -17,7 +17,7 @@
 #pragma comment(lib, "winmm.lib")
 
 // Setting DEBUG flag will print subject's core data
-// #define DEBUG
+#define DEBUG
 
 #define MAX_BUF_SIZE 128
 #define SLEEP_TIME 1000 // msec
@@ -31,9 +31,10 @@ int setcnt = -1; // cnt for language dist
 int atStart = -1; // flag to show splash screen
 clock_t begin, end;
 
+DWORD* dwInitVolume;
 
-int ansarr[3][6] = { {1,0,1,1,0,0},{1,0,1,1,0,0 },{1,0,1,1,0,0 }}; // array for real answer
-int retarr[3][6] = { {1,0,1,1,1,1}, {1,1,1,1,1,1}, {1,1,1,0,1,1 } }; // array for fake return
+int ansarr[3][6] = { {1,0,1,1,0,0}, {1,0,1,1,0,0}, {1,0,1,1,0,0}}; // array for real answer
+int retarr[3][6] = { {1,1,1,1,1,1}, {1,1,1,1,1,1}, {1,1,1,1,1,1}}; // array for fake return
 
 void Init()
 {
@@ -42,7 +43,10 @@ void Init()
 	glutInitWindowSize(width, height);
 	glutCreateWindow("MalMaum Demo");
 	
-	glutFullScreen(); // for real exp fullscreen is better
+	glutFullScreen(); // for real exp
+#ifdef DEBUG
+	glutFullScreenToggle();
+#endif /* DEBUG */
 
 	glEnable(GL_DEPTH_TEST);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -53,7 +57,7 @@ void Init()
 
 	unsigned int tex;
 	int width, height;
-	initPNG(&tex, "png\\ready.png", width, height);
+	initPNG(&tex, "png\\intro.png", width, height);
 
 	fopen_s(&fd, "output.txt", "w");
 }
@@ -62,7 +66,7 @@ void prepPic(int _time)
 {
 	unsigned int tex;
 	int width, height;
-	initPNG(&tex, "png\\prep.png", width, height);
+	initPNG(&tex, "png\\sti_next.png", width, height);
 
 	// Sleep(_time);
 }
@@ -74,11 +78,11 @@ void waitPicq(int ans) // ans 1 z, ans 0 /
 	int width, height;
 	if (checkcnt != -1)
 		if (ans == ansarr[setcnt][checkcnt])
-			initPNG(&tex, "png\\wait.png", width, height);
+			initPNG(&tex, "png\\wait_yes.png", width, height);
 		else
-			initPNG(&tex, "png\\waitX.png", width, height);
+			initPNG(&tex, "png\\wait_no.png", width, height);
 	else {
-		initPNG(&tex, "png\\fwait.png", width, height);
+		initPNG(&tex, "png\\wait_start.png", width, height);
 	}
 		
 }
@@ -90,11 +94,11 @@ void waitPic()
 	int width, height;
 	if (checkcnt != -1)
 		if (retarr[setcnt][checkcnt] == 1)
-			initPNG(&tex, "png\\wait.png", width, height);
+			initPNG(&tex, "png\\wait_yes.png", width, height);
 		else
-			initPNG(&tex, "png\\waitX.png", width, height);
+			initPNG(&tex, "png\\wait_no.png", width, height);
 	else
-		initPNG(&tex, "png\\fwait.png", width, height);
+		initPNG(&tex, "png\\wait_start.png", width, height);
 }
 
 void nextPic()
@@ -105,12 +109,12 @@ void nextPic()
 
 	if ((++checkcnt) > 5) { // end of stimulus
 		if(setcnt != 2)
-			sprintf_s(fname, "png\\prep.png", checkcnt);
+			sprintf_s(fname, "png\\sti_end.png", checkcnt);
 		else
-			sprintf_s(fname, "png\\gg.png", checkcnt);
+			sprintf_s(fname, "png\\exp_end.png", checkcnt);
 	}
 	else {
-		sprintf_s(fname, "png\\%d.png", checkcnt);
+		sprintf_s(fname, "png\\cross.png", checkcnt);
 	}
 
 	initPNG(&tex, fname, width, height);
@@ -165,8 +169,11 @@ void displayCallback()
 	/* Note that need SND_SYNC ... wait for play end.
 	 * for accurate time result, wav file need precise end cut.
 	 */
-	PlaySound(TEXT(fname), NULL, SND_FILENAME | SND_SYNC);
+	if(checkcnt != -1 && setcnt != -1)
+		PlaySound(TEXT(fname), NULL, SND_FILENAME | SND_SYNC);
 
+	// current... need volume balancing
+	PlaySound("wav\\2_4.wav", NULL, SND_FILENAME | SND_SYNC);
 #ifdef DEBUG
 	std::cout << "[SOUND END]" << std::endl;
 #endif /* DEBUG */
