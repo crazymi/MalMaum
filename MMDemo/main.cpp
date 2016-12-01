@@ -17,10 +17,10 @@
 #pragma comment(lib, "winmm.lib")
 
 // Setting DEBUG flag will print subject's core data
-#define DEBUG
+// #define DEBUG
 
 #define MAX_BUF_SIZE 128
-#define SLEEP_TIME 1000 // msec
+#define SLEEP_TIME 3000 // msec
 
 FILE* fd;
 int width = 600, height = 600;
@@ -36,7 +36,7 @@ clock_t begin, end;
 DWORD* dwInitVolume;
 
 int ansarr[3][6] = { {1,0,1,1,0,0}, {1,0,1,1,0,0}, {1,0,1,1,0,0}}; // array for real answer
-int retarr[3][6] = { {1,1,1,1,1,1}, {1,1,1,1,1,1}, {1,1,1,1,1,1}}; // array for fake return
+int retarr[3][6] = { {0,1,1,1,1,1}, {1,1,1,0,1,1}, {1,0,1,1,1,1}}; // array for fake return
 
 int age, sex = 1; // 1 for male, 0 for female
 char pinfo[MAX_BUF_SIZE];
@@ -179,6 +179,12 @@ void displayCallback()
 	if(checkcnt != -1 && setcnt != -1)
 		PlaySound(TEXT(fname), NULL, SND_FILENAME | SND_SYNC);
 
+<<<<<<< HEAD
+=======
+	// current... need volume balancing
+	// PlaySound("wav\\2_4.wav", NULL, SND_FILENAME | SND_SYNC);
+
+>>>>>>> b1d83c46a45a74513358653506f2b47bf091771a
 #ifdef DEBUG
 	std::cout << "[SOUND END]" << std::endl;
 #endif /* DEBUG */
@@ -220,12 +226,16 @@ void keyboardCallback(unsigned char key, int x, int y)
 	// setcnt/qflag initialize
 #ifdef DEBUG
 	if (setcnt == -1) {
-		if (key == 'z') // z input for controlled exp
+		if (key == 'z') // z input for non-controlled exp
 			qflag = 1;
 		setcnt = 0; 
 	printf("[EXP]qflag = %d\n", qflag);
 #endif /* DEBUG */
 	} // end initialized
+
+	// for testing...
+	//qflag = 1; // non-controlled
+	//qflag = -1; // controlled
 
 	if (key == 27) {
 		fclose(fd);
