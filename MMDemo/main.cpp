@@ -25,6 +25,8 @@
 FILE* fd;
 int width = 600, height = 600;
 int cflag = -1; // flag that exp is running
+/* qflag 1 : 실험군 즉 retarr을 이용하는 자존감 upup feedback
+ * qflag -1 : 대조군 즉 ansarr을 이용해 실제 정오답 그대로 알려줌 no feedback*/
 int qflag = -1; // flag that exp is on control(1) or not(-1).
 int checkcnt = -1; // cnt for each language
 int setcnt = -1; // cnt for language dist
@@ -35,6 +37,9 @@ DWORD* dwInitVolume;
 
 int ansarr[3][6] = { {1,0,1,1,0,0}, {1,0,1,1,0,0}, {1,0,1,1,0,0}}; // array for real answer
 int retarr[3][6] = { {1,1,1,1,1,1}, {1,1,1,1,1,1}, {1,1,1,1,1,1}}; // array for fake return
+
+int age, sex = 1; // 1 for male, 0 for female
+char pinfo[MAX_BUF_SIZE];
 
 void Init()
 {
@@ -59,7 +64,10 @@ void Init()
 	int width, height;
 	initPNG(&tex, "png\\intro.png", width, height);
 
-	fopen_s(&fd, "output.txt", "w");
+	fopen_s(&fd, "output.txt", "a");
+	char buf[MAX_BUF_SIZE];
+	sprintf_s(buf, "age: %d, sex: %s\n", age, (sex==1 ? "남" : "여"));
+	fwrite(buf, sizeof(char), 17, fd);
 }
 
 void prepPic(int _time)
@@ -67,7 +75,6 @@ void prepPic(int _time)
 	unsigned int tex;
 	int width, height;
 	initPNG(&tex, "png\\sti_next.png", width, height);
-
 	// Sleep(_time);
 }
 
@@ -172,8 +179,6 @@ void displayCallback()
 	if(checkcnt != -1 && setcnt != -1)
 		PlaySound(TEXT(fname), NULL, SND_FILENAME | SND_SYNC);
 
-	// current... need volume balancing
-	PlaySound("wav\\2_4.wav", NULL, SND_FILENAME | SND_SYNC);
 #ifdef DEBUG
 	std::cout << "[SOUND END]" << std::endl;
 #endif /* DEBUG */
@@ -213,12 +218,12 @@ void keyboardCallback(unsigned char key, int x, int y)
 	}
 
 	// setcnt/qflag initialize
+#ifdef DEBUG
 	if (setcnt == -1) {
 		if (key == 'z') // z input for controlled exp
 			qflag = 1;
 		setcnt = 0; 
-#ifdef DEBUG
-			printf("[EXP]qflag = %d\n", qflag);
+	printf("[EXP]qflag = %d\n", qflag);
 #endif /* DEBUG */
 	} // end initialized
 
@@ -233,11 +238,11 @@ void keyboardCallback(unsigned char key, int x, int y)
 			std::cout << "[YES] [" << checkcnt << "] " << (end - begin) << std::endl;
 			std::cout << "Real answer is " << ansarr[setcnt][checkcnt] << std::endl;
 #endif /* DEBUG */
-			sprintf_s(buf, "[%d-%d] _ YES _ %5d milisec\n", setcnt, checkcnt, (end - begin));
-			fwrite(buf, sizeof(char), 28, fd);
+			sprintf_s(buf, "%d %d 1 %04d\n", setcnt, checkcnt, (end - begin));
+			fwrite(buf, sizeof(char), 11, fd);
 		}	
 		cflag = 1;
-		(qflag==1 ? waitPicq(1) : waitPic());
+		(qflag==-1 ? waitPicq(1) : waitPic());
 		DrawTex();
 		glutSwapBuffers();
 
@@ -254,11 +259,11 @@ void keyboardCallback(unsigned char key, int x, int y)
 #ifdef DEBUG
 			std::cout << "[NO] [" << checkcnt << "] " << (end - begin) << std::endl;
 #endif /* DEBUG */
-			sprintf_s(buf, "[%d-%d] _ N O _ %5d milisec\n", setcnt, checkcnt, (end - begin));
-			fwrite(buf, sizeof(char), 28, fd);
+			sprintf_s(buf, "%d %d 0 %04d\n", setcnt, checkcnt, (end - begin));
+			fwrite(buf, sizeof(char), 11, fd);
 		}
 		cflag = 1; 
-		(qflag==1 ? waitPicq(0) : waitPic());
+		(qflag==-1 ? waitPicq(0) : waitPic());
 		DrawTex();
 		glutSwapBuffers();
 
@@ -278,8 +283,38 @@ void mouseCallback(int button, int action, int x, int y)
 	// no need for mouse callback
 }
 
+/* result save in pInfo */
+void getPersonalInfo()
+{
+	printf("나이와 성별을 입력해주세요.\n");
+	printf(" e.g) 94년생 남자: 94m\n");
+	printf(" e.g) 96년생 여자: 96f\n");
+	while (1) {
+		printf("입력: ");
+		gets_s(pinfo);
+		if (strlen(pinfo) != 3 || (pinfo[2] != 'm' && pinfo[2] != 'f') ) {
+			printf("잘못된 입력입니다. e.g) 94m\n");
+			continue;
+		}
+		age = (int)atoi(pinfo);
+		if (pinfo[2] == 'f')
+			sex = 0;
+		break; // quit loop
+	}
+
+#ifdef DEBUG
+	printf("age : %d, sex : %s\n", age, (sex == 1 ? "남" : "여"));
+#endif /* DEBUG */
+
+	printf("잠시후 실험이 시작됩니다.\n");
+	Sleep(2);
+}
+
 int main(int argc, char **argv)
 {
+	/* get personal info*/
+	getPersonalInfo();
+
 	glutInit(&argc, argv);
 	Init();
 	glutDisplayFunc(displayCallback);
